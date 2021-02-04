@@ -9,8 +9,8 @@ be easily changed by the user.
 
 You can install this environment by:
 
-1. Downloading the repo: `git clone https://github.com/gallorob/gym-tablut.git`
-2. Move in the repo's root folder: `cd gym-tablut`
+1. Downloading the repo: `git clone https://github.com/gallorob/tafl-gym`
+2. Move in the repo's root folder: `cd tafl-gym`
 3. Installing the requirements: `pip install -r requirements.txt`
 4. Installing the environment: `pip install -e .`
 
@@ -19,12 +19,12 @@ You can install this environment by:
 Please use the bibtex below if you want to cite this repository in your publications:
 
 ```
-@misc{gym-tablut,
+@misc{tafl-gym,
   author = {Gallotta Roberto},
-  title = {OpenAI gym environment based on the Tablut board game for Reinforcement Learning},
-  year = {2020},
+  title = {OpenAI Gym environment based on the Tafl board games for Reinforcement Learning},
+  year = {2021},
   publisher = {GitHub},
   journal = {GitHub repository},
-  howpublished = {\url{https://github.com/gallorob/gym-tablut}},
+  howpublished = {\url{https://github.com/gallorob/tafl-gym}},
 }
 ```
