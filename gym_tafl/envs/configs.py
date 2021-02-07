@@ -18,7 +18,7 @@ ATTACKER = config['TILES'].getint('attacker')
 # enum for current player
 DEF = config['PLAYERS'].getint('defender')
 ATK = config['PLAYERS'].getint('attacker')
-DRAW = config['PLAYERS'].getint('defender')
+DRAW = config['PLAYERS'].getint('draw')
 
 # graphic stuff
 SCR_WIDTH = config['GRAPHIC'].getint('scr_width')

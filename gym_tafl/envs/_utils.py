@@ -139,6 +139,14 @@ def on_edge_arr(board: np.array, position: Tuple[int, int]) -> bool:
     return i == 0 or j == 0 or i == board.shape[0] - 1 or j == board.shape[1] - 1
 
 
+def on_corner_arr(board: np.array, position: Tuple[int, int]) -> bool:
+    i, j = position
+    return (i == 0 and j == 0) or \
+           (i == 0 and j == board.shape[0] - 1) or \
+           (i == board.shape[1] - 1 and j == board.shape[0] - 1) or \
+           (i == board.shape[1] - 1 and j == 0)
+
+
 def on_throne_arr(board: np.array, position: Tuple[int, int]) -> bool:
     """
     Check if the array position is the throne

@@ -38,6 +38,15 @@ class GameEngine:
         self.n_cols = variant_config['VARIANT'].getint('n_cols')
         self.vector_mask = vector_mask
 
+        # rules
+        self.draw_after_50_turns_without_capture = variant_config['DRAW CONDITION']\
+            .getboolean('draw_after_50_turns_without_capture')
+        self.no_capture_turns_counter = 0
+
+        self.edge_escape = variant_config['OBJECTIVE'].getboolean('edge_escape')
+
+        self.no_throne =  variant_config['THRONE'].getboolean('no_throne')
+
     def fill_board(self, board: np.array):
         char_to_tile = {
             'a': ATTACKER,
@@ -141,13 +150,20 @@ class GameEngine:
         }
         # update board and piece
         board[ti, tj] = board[fi, fj]
-        board[fi, fj] = THRONE if on_throne_arr(board, (fi, fj)) else EMPTY
+        board[fi, fj] = THRONE if not self.no_throne and on_throne_arr(board, (fi, fj)) else EMPTY
         # check if king has escaped
-        if board[ti, tj] == KING and on_edge_arr(board, (ti, tj)):
+        if board[ti, tj] == KING and self.edge_escape and on_edge_arr(board, (ti, tj)):
+            info['game_over'] = True
+            info['reward'] += self.GAME_OVER_REWARD
+        elif board[ti, tj] == KING and (not self.edge_escape) and on_corner_arr(board, (ti, tj)):
             info['game_over'] = True
             info['reward'] += self.GAME_OVER_REWARD
         # process captures
         to_remove = self.process_captures(board, (ti, tj))
+        if len(to_remove) == 0:
+            self.no_capture_turns_counter += 1
+        else:
+            self.no_capture_turns_counter = 0
         for (i, j) in to_remove:
             if board[i, j] == KING:
                 info['game_over'] = True
@@ -216,8 +232,11 @@ class GameEngine:
                 threats += 1 if p in [ATTACKER, THRONE] else 0
         return threats
 
-    def check_endgame(self, last_moves: List[Tuple[int, int, int, int]], last_move: Tuple[int, int, int, int],
-                      player: int, n_moves: int) -> dict:
+    def check_endgame(self,
+                      last_moves: List[Tuple[int, int, int, int]],
+                      last_move: Tuple[int, int, int, int],
+                      player: int,
+                      n_moves: int) -> dict:
         info = {
             'game_over': False,
             'reason': '',
@@ -234,4 +253,9 @@ class GameEngine:
                                       last_move=last_move):
             info['game_over'] = True
             info['reason'] = 'Threefold repetition'
+            info['winner'] = DRAW
+        elif self.draw_after_50_turns_without_capture and self.no_capture_turns_counter == 100:  # 2 moves = 1 turn
+            info['game_over'] = True
+            info['reason'] = '50 turns with no capture'
+            info['winner'] = DRAW
         return info

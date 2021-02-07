@@ -196,13 +196,13 @@ class TaflEnv(gym.Env):
                     c = 1 if c == 0 else 0
                     self.viewer.add_geom(tile)
             # throne
-            throne = rendering.Image(self.assets.get(THRONE), self.square_width, self.square_height)
-            throne.set_color(1., 1., 1.)
-            throne.add_attr(
-                rendering.Transform(translation=((self.n_cols // 2 + 1) * self.square_width + (self.square_width / 2),
-                                                 (self.n_rows // 2 + 1) * self.square_height + (
-                                                             self.square_height / 2))))
-            self.viewer.add_geom(throne)
+            if not self.game_engine.no_throne:
+                throne = rendering.Image(self.assets.get(THRONE), self.square_width, self.square_height)
+                throne.set_color(1., 1., 1.)
+                throne.add_attr(
+                    rendering.Transform(translation=((self.n_cols // 2 + 1) * self.square_width + (self.square_width / 2),
+                                                     (self.n_rows // 2 + 1) * self.square_height + (self.square_height / 2))))
+                self.viewer.add_geom(throne)
 
         # add pieces as a one-time render
         for i in range(self.board.shape[0]):
@@ -214,9 +214,7 @@ class TaflEnv(gym.Env):
                     tile = rendering.Image(self.assets.get(p), self.square_width, self.square_height)
                     tile.set_color(1., 1., 1.)
                     tile.add_attr(rendering.Transform(translation=(c * self.square_width + (self.square_width / 2),
-                                                                   (self.board.shape[
-                                                                        0] - r + 1) * self.square_height + (
-                                                                           self.square_height / 2))))
+                                                                   (self.board.shape[0] - r + 1) * self.square_height + (self.square_height / 2))))
                     self.viewer.add_onetime(tile)
 
         return self.viewer.render(return_rgb_array=mode == 'rgb_array')
