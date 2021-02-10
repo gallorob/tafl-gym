@@ -114,6 +114,8 @@ def position_as_str(position: Tuple[int, int], rows: int) -> str:
     return col + str(row)
 
 
+# TODO: This will break with size > 9
+
 def position_as_tuple(position: str, rows: int) -> Tuple[int, int]:
     """
     Convert a position in string format to tuple `(row, col)`

@@ -45,7 +45,22 @@ class GameEngine:
 
         self.edge_escape = variant_config['OBJECTIVE'].getboolean('edge_escape')
 
-        self.no_throne =  variant_config['THRONE'].getboolean('no_throne')
+        self.no_throne = variant_config['THRONE'].getboolean('no_throne')
+
+        self.unrestricted_movement = variant_config['MOVEMENT'].getboolean('unrestricted_movement')
+
+        if not self.unrestricted_movement:
+            self.m_counter = {
+                KING: 1 if (variant_config['MOVEMENT'].getboolean('king_only_moves_1_tile') or
+                            variant_config['MOVEMENT'].getboolean('all_move_only_1_tile')) else max(self.n_rows,
+                                                                                                    self.n_cols),
+                ATTACKER: 1 if variant_config['MOVEMENT'].getboolean('all_move_only_1_tile') else max(self.n_rows,
+                                                                                                      self.n_cols),
+                DEFENDER: 1 if variant_config['MOVEMENT'].getboolean('all_move_only_1_tile') else max(self.n_rows,
+                                                                                                      self.n_cols)
+            }
+
+        self.pieces_can_jump_over_throne = variant_config['MOVEMENT'].getboolean('pieces_can_jump_over_throne')
 
     def fill_board(self, board: np.array):
         char_to_tile = {
@@ -81,8 +96,10 @@ class GameEngine:
                         moves.extend(self._legal_moves(board, p, (i, j)))
         return moves
 
-    @staticmethod
-    def _legal_moves(board: np.array, piece: int, position: Tuple[int, int]) -> List[int]:
+    def _legal_moves(self,
+                     board: np.array,
+                     piece: int,
+                     position: Tuple[int, int]) -> List[int]:
         """
         Compute the legal and valid moves for the selected piece in the given board
 
@@ -94,9 +111,11 @@ class GameEngine:
         moves = []
         for inc_i, inc_j in DIRECTIONS:
             i, j = position
-            while True:
+            c = 0
+            while self.unrestricted_movement or c < self.m_counter[piece]:
                 i += inc_i
                 j += inc_j
+                c += 1
                 if i < 0 or i > board.shape[0] - 1 or j < 0 or j > board.shape[1] - 1:
                     break
                 t_tile = board[i, j]
@@ -110,7 +129,10 @@ class GameEngine:
                                                       rows=board.shape[0],
                                                       cols=board.shape[1]))
                     else:
-                        continue
+                        if self.pieces_can_jump_over_throne:
+                            continue
+                        else:
+                            break
                 else:
                     break
         return moves
