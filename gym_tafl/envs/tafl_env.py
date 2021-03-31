@@ -60,7 +60,7 @@ class TaflEnv(gym.Env):
             info['move'] = move_str
             reward = res.get('reward')
             logger.debug(
-                f"[{str(self.n_moves + 1).zfill(int(np.log10(self.game_engine.MAX_MOVES)) + 1)}/{self.game_engine.MAX_MOVES}] "
+                f"[{str(self.n_moves + 1).zfill(int(np.log10(self.game_engine.MAX_MOVES)) + 1)}/{self.game_engine.MAX_MOVES + 1}] "
                 f"{'ATK' if self.player == ATK else 'DEF'} : {move_str}")
             if res.get('game_over', False):
                 self.done = True
@@ -200,8 +200,9 @@ class TaflEnv(gym.Env):
                 throne = rendering.Image(self.assets.get(THRONE), self.square_width, self.square_height)
                 throne.set_color(1., 1., 1.)
                 throne.add_attr(
-                    rendering.Transform(translation=((self.n_cols // 2 + 1) * self.square_width + (self.square_width / 2),
-                                                     (self.n_rows // 2 + 1) * self.square_height + (self.square_height / 2))))
+                    rendering.Transform(
+                        translation=((self.n_cols // 2 + 1) * self.square_width + (self.square_width / 2),
+                                     (self.n_rows // 2 + 1) * self.square_height + (self.square_height / 2))))
                 self.viewer.add_geom(throne)
 
         # add pieces as a one-time render
@@ -214,7 +215,9 @@ class TaflEnv(gym.Env):
                     tile = rendering.Image(self.assets.get(p), self.square_width, self.square_height)
                     tile.set_color(1., 1., 1.)
                     tile.add_attr(rendering.Transform(translation=(c * self.square_width + (self.square_width / 2),
-                                                                   (self.board.shape[0] - r + 1) * self.square_height + (self.square_height / 2))))
+                                                                   (self.board.shape[
+                                                                        0] - r + 1) * self.square_height + (
+                                                                           self.square_height / 2))))
                     self.viewer.add_onetime(tile)
 
         return self.viewer.render(return_rgb_array=mode == 'rgb_array')

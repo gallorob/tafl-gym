@@ -1,6 +1,3 @@
-import configparser
-import os
-
 from gym_tafl.envs._utils import *
 from gym_tafl.envs.configs import *
 
@@ -20,7 +17,7 @@ class GameEngine:
         self.board = variant_config['VARIANT'].get('board').split(',')
         self.GAME_OVER_REWARD = 100
         self.MAX_REWARD = self.GAME_OVER_REWARD
-        self.MAX_MOVES = variant_config['VARIANT'].getint('max_moves')
+        self.MAX_MOVES = variant_config['VARIANT'].getint('max_moves') - 1
 
         players = {
             'ATK': ATK,
@@ -39,7 +36,7 @@ class GameEngine:
         self.vector_mask = vector_mask
 
         # rules
-        self.draw_after_50_turns_without_capture = variant_config['DRAW CONDITION']\
+        self.draw_after_50_turns_without_capture = variant_config['DRAW CONDITION'] \
             .getboolean('draw_after_50_turns_without_capture')
         self.no_capture_turns_counter = 0
 
@@ -69,20 +66,20 @@ class GameEngine:
             'd': DEFENDER
         }
 
-        if self.variant == 'tablut':
-            assert len(self.board) == board.shape[
-                0], f"[ERR GameEngine.fill_board] Unexpected board length: {len(self.board)}"
-            for j, row in enumerate(self.board):
-                i = 0
-                for c in row:
-                    assert i < board.shape[1], f"[ERR GameEngine.fill_board] Unexpected row configuration: {row}"
-                    if c.isdigit():
-                        i += int(c)
-                    else:
-                        t = char_to_tile[c.lower()]
-                        board[j, i] = t
-                        self.MAX_REWARD += abs(self.piece_reward.get(t))
-                        i += 1
+        # if self.variant == 'tablut':
+        assert len(self.board) == board.shape[
+            0], f"[ERR GameEngine.fill_board] Unexpected board length: {len(self.board)}"
+        for j, row in enumerate(self.board):
+            i = 0
+            for c in row:
+                assert i < board.shape[1], f"[ERR GameEngine.fill_board] Unexpected row configuration: {row}"
+                if c.isdigit():
+                    i += int(c)
+                else:
+                    t = char_to_tile[c.lower()]
+                    board[j, i] = t
+                    self.MAX_REWARD += abs(self.piece_reward.get(t))
+                    i += 1
 
     def legal_moves(self, board: np.array, player: int):
         assert player in [ATK, DEF], f"[ERR: legal_moves] Unrecognized player type: {player}"
@@ -271,8 +268,8 @@ class GameEngine:
             info['reason'] = 'Moves limit reached'
             info['winner'] = ATK if player == DEF else DEF
         # check threefold repetition
-        if check_threefold_repetition(last_moves=last_moves,
-                                      last_move=last_move):
+        elif check_threefold_repetition(last_moves=last_moves,
+                                        last_move=last_move):
             info['game_over'] = True
             info['reason'] = 'Threefold repetition'
             info['winner'] = DRAW
