@@ -125,6 +125,7 @@ class TaflEnv(gym.Env):
         self.n_rows = self.game_engine.n_rows
         self.n_cols = self.game_engine.n_cols
         self.board = np.zeros((self.n_rows, self.n_cols))
+        self.game_engine.no_capture_turns_counter = 0
         self.game_engine.fill_board(self.board)
         # initialize action space
         self.valid_actions = self.game_engine.legal_moves(self.board, self.game_engine.STARTING_PLAYER)

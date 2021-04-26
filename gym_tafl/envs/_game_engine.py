@@ -42,6 +42,8 @@ class GameEngine:
         self.draw_after_50_turns_without_capture = variant_config['DRAW CONDITION']\
             .getboolean('draw_after_50_turns_without_capture')
         self.no_capture_turns_counter = 0
+        self.threefold_repetition_as_draw = variant_config['DRAW CONDITION']\
+            .getboolean('threefold_repetition_as_draw')
 
         self.edge_escape = variant_config['OBJECTIVE'].getboolean('edge_escape')
 
@@ -60,7 +62,21 @@ class GameEngine:
                                                                                                       self.n_cols)
             }
 
-        self.pieces_can_jump_over_throne = variant_config['MOVEMENT'].getboolean('pieces_can_jump_over_throne')
+        self.only_king_can_land_on_throne = variant_config['THRONE MOVEMENT'].getboolean('only_king_can_land_on_throne')
+        self.no_one_can_land_on_throne = variant_config['THRONE MOVEMENT'].getboolean('no_one_can_land_on_throne')
+
+        self.throne_blocks_all_except_king = variant_config['THRONE MOVEMENT'].getboolean('throne_blocks_all_except_king')
+        self.throne_blocks_all = variant_config['THRONE MOVEMENT'].getboolean('throne_blocks_all')
+
+        # king power
+        self.armed_king = variant_config['KING POWER'].getboolean('armed_king')
+        self.anvil_king = variant_config['KING POWER'].getboolean('anvil_king')
+        self.unarmed_king = variant_config['KING POWER'].getboolean('unarmed_king')
+
+        # king capture
+        self.king_captured_with_two_pieces = variant_config['KING CAPTURE'].getboolean('king_captured_with_two_pieces')
+        self.king_captured_with_two_pieces_except_near_or_on_throne = variant_config['KING CAPTURE'].getboolean('king_captured_with_two_pieces_except_near_or_on_throne')
+        self.king_captured_with_four_pieces = variant_config['KING CAPTURE'].getboolean('king_captured_with_four_pieces')
 
     def fill_board(self, board: np.array):
         char_to_tile = {
@@ -69,20 +85,28 @@ class GameEngine:
             'd': DEFENDER
         }
 
-        if self.variant == 'tablut':
-            assert len(self.board) == board.shape[
-                0], f"[ERR GameEngine.fill_board] Unexpected board length: {len(self.board)}"
-            for j, row in enumerate(self.board):
-                i = 0
-                for c in row:
-                    assert i < board.shape[1], f"[ERR GameEngine.fill_board] Unexpected row configuration: {row}"
-                    if c.isdigit():
-                        i += int(c)
-                    else:
-                        t = char_to_tile[c.lower()]
-                        board[j, i] = t
-                        self.MAX_REWARD += abs(self.piece_reward.get(t))
-                        i += 1
+        assert len(self.board) == board.shape[
+            0], f"[ERR GameEngine.fill_board] Unexpected board length: {len(self.board)}"
+        for j, row in enumerate(self.board):
+            i = 0
+            for c in row:
+                assert i < board.shape[1], f"[ERR GameEngine.fill_board] Unexpected row configuration: {row}"
+                if c.isdigit():
+                    i += int(c)
+                else:
+                    t = char_to_tile[c.lower()]
+                    board[j, i] = t
+                    self.MAX_REWARD += abs(self.piece_reward.get(t))
+                    i += 1
+        if not self.edge_escape:  # add the corners
+            if board[0, 0] == EMPTY:
+                board[0, 0] = CORNER
+            if board[self.n_rows - 1, 0] == EMPTY:
+                board[self.n_rows - 1, 0] = CORNER
+            if board[self.n_rows - 1, self.n_cols - 1] == EMPTY:
+                board[self.n_rows - 1, self.n_cols - 1] = CORNER
+            if board[0, self.n_cols - 1] == EMPTY:
+                board[0, self.n_cols - 1] = CORNER
 
     def legal_moves(self, board: np.array, player: int):
         assert player in [ATK, DEF], f"[ERR: legal_moves] Unrecognized player type: {player}"
@@ -124,15 +148,24 @@ class GameEngine:
                                                   rows=board.shape[0],
                                                   cols=board.shape[1]))
                 elif t_tile == THRONE:
-                    if piece == KING:
+                    if piece == KING and self.only_king_can_land_on_throne:
+                        moves.append(space_to_decimal(values=(position[0], position[1], i, j),
+                                                      rows=board.shape[0],
+                                                      cols=board.shape[1]))
+                    elif piece != KING and not self.no_one_can_land_on_throne:  # TODO: Test
                         moves.append(space_to_decimal(values=(position[0], position[1], i, j),
                                                       rows=board.shape[0],
                                                       cols=board.shape[1]))
                     else:
-                        if self.pieces_can_jump_over_throne:
+                        if (piece == KING and self.throne_blocks_all_except_king) or (not self.throne_blocks_all):
                             continue
                         else:
                             break
+                elif t_tile == CORNER:
+                    if piece == KING:
+                        moves.append(space_to_decimal(values=(position[0], position[1], i, j),
+                                                      rows=board.shape[0],
+                                                      cols=board.shape[1]))
                 else:
                     break
         return moves
@@ -209,7 +242,7 @@ class GameEngine:
                 middle_piece = board[i, j]
                 if middle_piece in [KING, ATTACKER, DEFENDER]:
                     if (piece == DEFENDER and middle_piece == ATTACKER) or \
-                            (piece == KING and middle_piece == ATTACKER) or \
+                            (piece == KING and self.armed_king and middle_piece == ATTACKER) or \
                             (piece == ATTACKER and middle_piece == DEFENDER):
                         i += inc_i
                         j += inc_j
@@ -217,29 +250,32 @@ class GameEngine:
                             outer_piece = board[i, j]
                             # normal capture
                             if outer_piece in [KING, ATTACKER, DEFENDER] and \
-                                    (piece == outer_piece or (piece == DEFENDER and outer_piece == KING)
-                                     or (piece == KING and outer_piece == DEFENDER)):
+                                    (piece == outer_piece or (piece == DEFENDER and outer_piece == KING and (self.armed_king or self.anvil_king))
+                                     or (piece == KING and self.armed_king and outer_piece == DEFENDER)):
                                 captures.append((i - inc_i, j - inc_j))
                             # capture next to throne
                             elif outer_piece == THRONE and (
                                     (piece == ATTACKER and middle_piece == DEFENDER) or
-                                    ((piece == DEFENDER or piece == KING) and piece == ATTACKER)):
+                                    ((piece == DEFENDER or piece == KING and self.armed_king) and piece == ATTACKER)):
                                 captures.append((i - inc_i, j - inc_j))
                     # capture king
                     elif piece == ATTACKER and middle_piece == KING:
+                        if self.king_captured_with_two_pieces or \
+                                ((not on_throne_arr(board, (i, j)) and not next_to_throne_arr(board, (i, j)))
+                                 and self.king_captured_with_two_pieces_except_near_or_on_throne):
+                            i += inc_i
+                            j += inc_j
+                            if not (out_of_board_arr(board, (i, j))):
+                                outer_piece = board[i, j]
+                                if outer_piece in [ATTACKER, THRONE]:
+                                    captures.append((i - inc_i, j - inc_j))
+                    elif self.king_captured_with_four_pieces or \
+                            self.king_captured_with_two_pieces_except_near_or_on_throne:
                         # case 1: king is on the throne, need 4 pieces
                         # case 2: king is next to the throne, need 3 pieces
                         if on_throne_arr(board, (i, j)) or next_to_throne_arr(board, (i, j)):
                             if self._check_king(board, (i, j)) == 4:
                                 captures.append((i, j))
-                        # case 3: king is free roaming
-                        else:
-                            i += inc_i
-                            j += inc_j
-                            if not (out_of_board_arr(board, (i, j))):
-                                outer_piece = board[i, j]
-                                if outer_piece == ATTACKER:
-                                    captures.append((i - inc_i, j - inc_j))
         return captures
 
     @staticmethod
@@ -251,7 +287,10 @@ class GameEngine:
             j += inc_j
             if not out_of_board_arr(board, (i, j)):
                 p = board[i, j]
-                threats += 1 if p in [ATTACKER, THRONE] else 0
+                if p == ATTACKER:
+                    threats += 1
+                elif p == THRONE and self.king_captured_with_two_pieces_except_near_or_on_throne:
+                    threats += 1
         return threats
 
     def check_endgame(self,
@@ -269,13 +308,16 @@ class GameEngine:
         if n_moves == self.MAX_MOVES:
             info['game_over'] = True
             info['reason'] = 'Moves limit reached'
-            info['winner'] = ATK if player == DEF else DEF
+            info['winner'] = DRAW
         # check threefold repetition
         if check_threefold_repetition(last_moves=last_moves,
                                       last_move=last_move):
             info['game_over'] = True
             info['reason'] = 'Threefold repetition'
-            info['winner'] = DRAW
+            if self.threefold_repetition_as_draw:
+                info['winner'] = DRAW
+            else:
+                info['winner'] = ATK if player == DEF else DEF
         elif self.draw_after_50_turns_without_capture and self.no_capture_turns_counter == 100:  # 2 moves = 1 turn
             info['game_over'] = True
             info['reason'] = '50 turns with no capture'

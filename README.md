@@ -28,3 +28,29 @@ Please use the bibtex below if you want to cite this repository in your publicat
   howpublished = {\url{https://github.com/gallorob/tafl-gym}},
 }
 ```
+
+## Balances and search space
+### Custom variant
+
+Measured balance using random agents:
+```
+Summary after running 1000 games on "custom":
+Attacker won 317/1000 games (31.7%)
+Defender won 373/1000 games (37.3%)
+Draws were 310/1000 games (31.0%)
+Average number of legal moves per turn: 36.14
+Average number of moves per match: 73.96
+```
+
+### Tablut
+
+Measured balance using random agents:
+
+```
+Summary after running 1000 games on "tablut":
+Attacker won 195/1000 games (19.5%)
+Defender won 402/1000 games (40.2%)
+Draws were 403/1000 games (40.3%)
+Average number of legal moves per turn: 82.46
+Average number of moves per match: 92.82
+```
