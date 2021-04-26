@@ -1,6 +1,3 @@
-import configparser
-import os
-
 from gym_tafl.envs._utils import *
 from gym_tafl.envs.configs import *
 
@@ -20,7 +17,7 @@ class GameEngine:
         self.board = variant_config['VARIANT'].get('board').split(',')
         self.GAME_OVER_REWARD = 100
         self.MAX_REWARD = self.GAME_OVER_REWARD
-        self.MAX_MOVES = variant_config['VARIANT'].getint('max_moves')
+        self.MAX_MOVES = variant_config['VARIANT'].getint('max_moves') - 1
 
         players = {
             'ATK': ATK,
@@ -39,7 +36,7 @@ class GameEngine:
         self.vector_mask = vector_mask
 
         # rules
-        self.draw_after_50_turns_without_capture = variant_config['DRAW CONDITION']\
+        self.draw_after_50_turns_without_capture = variant_config['DRAW CONDITION'] \
             .getboolean('draw_after_50_turns_without_capture')
         self.no_capture_turns_counter = 0
         self.threefold_repetition_as_draw = variant_config['DRAW CONDITION']\
@@ -98,15 +95,6 @@ class GameEngine:
                     board[j, i] = t
                     self.MAX_REWARD += abs(self.piece_reward.get(t))
                     i += 1
-        if not self.edge_escape:  # add the corners
-            if board[0, 0] == EMPTY:
-                board[0, 0] = CORNER
-            if board[self.n_rows - 1, 0] == EMPTY:
-                board[self.n_rows - 1, 0] = CORNER
-            if board[self.n_rows - 1, self.n_cols - 1] == EMPTY:
-                board[self.n_rows - 1, self.n_cols - 1] = CORNER
-            if board[0, self.n_cols - 1] == EMPTY:
-                board[0, self.n_cols - 1] = CORNER
 
     def legal_moves(self, board: np.array, player: int):
         assert player in [ATK, DEF], f"[ERR: legal_moves] Unrecognized player type: {player}"
@@ -278,8 +266,7 @@ class GameEngine:
                                 captures.append((i, j))
         return captures
 
-    @staticmethod
-    def _check_king(board: np.array, position: Tuple[int, int]) -> int:
+    def _check_king(self, board: np.array, position: Tuple[int, int]) -> int:
         threats = 0
         for inc_i, inc_j in DIRECTIONS:
             i, j = position
@@ -310,8 +297,8 @@ class GameEngine:
             info['reason'] = 'Moves limit reached'
             info['winner'] = DRAW
         # check threefold repetition
-        if check_threefold_repetition(last_moves=last_moves,
-                                      last_move=last_move):
+        elif check_threefold_repetition(last_moves=last_moves,
+                                        last_move=last_move):
             info['game_over'] = True
             info['reason'] = 'Threefold repetition'
             if self.threefold_repetition_as_draw:
