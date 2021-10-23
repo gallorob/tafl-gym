@@ -29,6 +29,18 @@ Please use the bibtex below if you want to cite this repository in your publicat
 }
 ```
 
+This Gym Environment was developed for and used in "Tafl-ES: Exploring Evolution Strategies for Asymmetrical Board Games" (to appear in post-proceedings of AIxIA 2021):
+```
+@inproceedings{
+  series = {Lecture {Notes} in {Artificial} {Intelligence} ({LNAI})},
+  title = {Tafl-{ES}: {Exploring} {Evolution} {Strategies} for {Asymmetrical} {Board} {Games}},
+  abstract = {NeuroEvolution Strategies (NES) are a subclass of Evolution Strategies (ES). While their application to games and board games have been studied in the past, current state of the art in most of the games is still held by classic RL models, such as AlphaGo Zero. This is despite recent work showing their desirable properties. In this paper we use NES applied to the board game Hnefatafl, a known hard environment given its asymmetrical nature. In the experiment we set up we coevolve two populations of intelligent agents. With results collected thus far we show the validity of this approach and useful techniques to overcome its large computation resource and time requirements.},
+  date = {2021},
+  publisher = {Springer Verlag},
+  author = {Gallotta, Roberto and Capobianco, Roberto},
+}
+```
+
 ## Balances and search space
 ### Custom variant
 
